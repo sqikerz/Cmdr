@@ -1,11 +1,11 @@
 [package]
-name = "sqikerz/cmdr"
+name = "evaera/cmdr"
 description = "A fully extensible, type-safe command framework for Roblox."
-version = "1.13.1"
+version = "1.13.0"
 license = "MIT"
 registry = "https://github.com/UpliftGames/wally-index"
 homepage = "https://eryn.io/Cmdr/"
-repository = "https://github.com/sqikerz/Cmdr"
+repository = "https://github.com/evaera/Cmdr"
 realm = "shared"
 exclude = ["**"]
 include = [

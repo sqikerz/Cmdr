@@ -1,6 +1,7 @@
 const RunService = game:GetService("RunService")
 
 const Argument = require("./Argument")
+const Util = require("./Util")
 
 const IS_SERVER = RunService:IsServer()
 const IS_CLIENT = RunService:IsClient()
@@ -290,58 +291,129 @@ function Command:GatherArgumentValues(): ({ any }, number)
 	return values, #self.ArgumentDefinitions
 end
 
+const function settle(value: any): (Util.PromiseStatus, any)
+	if not Util.IsPromise(value) then
+		return "Resolved", value
+	end
+
+	return Util.AwaitPromise(value)
+end
+
+const function failureText(status: Util.PromiseStatus, value: any): string
+	if status == "Cancelled" then
+		return "Command cancelled."
+	end
+
+	return if value == nil then "Command failed." else tostring(value)
+end
+
 --[=[
 	@within CommandContext
-	Runs the command.
+	@private
+
+	@return (string, Color3?) -- The response, followed by the color the console should display it in.
+
+	Reports an implementation whose promise didn't resolve.
 ]=]
-function Command:Run(): string?
-	assert(self._Validated, "[Cmdr] Must validate a command before running.")
+function Command:_failureResponse(status: Util.PromiseStatus, value: any): (string, Color3?)
+	const response = failureText(status, value)
 
-	const beforeRunHook = self.Dispatcher:RunHooks("BeforeRun", self)
-	if beforeRunHook then
-		return beforeRunHook
+	if status == "Cancelled" then
+		return response
 	end
 
-	const guardResult = self.Dispatcher:RunGuards(self)
-	if guardResult then
-		return guardResult
-	end
+	warn(`[Cmdr] {self.Name} command rejected: {response}`)
 
+	return response, Util.ErrorColor
+end
+
+--[=[
+	@within CommandContext
+	@private
+
+	@return (any, Color3?) -- The response, followed by the color the console should display it in.
+
+	Gathers data and runs the client or server implementation, awaiting any promise they return.
+]=]
+function Command:_runImplementation(): (any, Color3?)
 	if not IS_SERVER and self.Object.Data and self.Data == nil then
 		const values, length = self:GatherArgumentValues()
-		self.Data = self.Object.Data(self, unpack(values, 1, length))
+		const status, data = settle(self.Object.Data(self, unpack(values, 1, length)))
+
+		if status ~= "Resolved" then
+			return self:_failureResponse(status, data)
+		end
+
+		self.Data = data
 	end
 
 	if not IS_SERVER and self.Object.ClientRun then
 		const values, length = self:GatherArgumentValues()
-		self.Response = self.Object.ClientRun(self, unpack(values, 1, length))
-	end
+		const status, response = settle(self.Object.ClientRun(self, unpack(values, 1, length)))
 
-	if self.Response == nil then
-		if self.Object.Run then
-			const values, length = self:GatherArgumentValues()
-			self.Response = self.Object.Run(self, unpack(values, 1, length))
-		elseif IS_SERVER then
-			if self.Object.ClientRun then
-				warn(
-					`[Cmdr] {self.Name} command fell back to the server because ClientRun returned nil, but there is no server implementation!`
-				)
-			else
-				warn(`[Cmdr] {self.Name} command has no implementation!`)
-			end
+		if status ~= "Resolved" then
+			return self:_failureResponse(status, response)
+		end
 
-			self.Response = "No implementation."
-		else
-			self.Response = self.Dispatcher:Send(self.RawText, self.Data)
+		if response ~= nil then
+			return response
 		end
 	end
+
+	if self.Object.Run then
+		const values, length = self:GatherArgumentValues()
+		const status, response = settle(self.Object.Run(self, unpack(values, 1, length)))
+
+		if status ~= "Resolved" then
+			return self:_failureResponse(status, response)
+		end
+
+		return response
+	end
+
+	if IS_SERVER then
+		if self.Object.ClientRun then
+			warn(
+				`[Cmdr] {self.Name} command fell back to the server because ClientRun returned nil, but there is no server implementation!`
+			)
+		else
+			warn(`[Cmdr] {self.Name} command has no implementation!`)
+		end
+
+		return "No implementation."
+	end
+
+	return self.Dispatcher:Send(self.RawText, self.Data)
+end
+
+--[=[
+	@within CommandContext
+	@return (string?, Color3?) -- The response, followed by the color the console should display it in.
+
+	Runs the command.
+]=]
+function Command:Run(): (string?, Color3?)
+	assert(self._Validated, "[Cmdr] Must validate a command before running.")
+
+	const beforeRunHook = self.Dispatcher:RunHooks("BeforeRun", self)
+	if beforeRunHook then
+		return beforeRunHook, Util.ErrorColor
+	end
+
+	const guardResult = self.Dispatcher:RunGuards(self)
+	if guardResult then
+		return guardResult, Util.ErrorColor
+	end
+
+	const response, responseColor = self:_runImplementation()
+	self.Response = response
 
 	const afterRunHook = self.Dispatcher:RunHooks("AfterRun", self)
 	if afterRunHook then
 		return afterRunHook
 	end
 
-	return self.Response
+	return self.Response, responseColor
 end
 
 --[=[
@@ -366,7 +438,13 @@ function Command:GetData()
 	end
 
 	if self.Object.Data and not IS_SERVER then
-		self.Data = self.Object.Data(self)
+		const status, data = settle(self.Object.Data(self))
+
+		if status ~= "Resolved" then
+			error(failureText(status, data), 0)
+		end
+
+		self.Data = data
 	end
 
 	return self.Data

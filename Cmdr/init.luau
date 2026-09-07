@@ -141,7 +141,7 @@ const function initialize()
 
 	Cmdr._remoteFunction.OnServerInvoke = function(player: Player, text: string, options: any)
 		if #text > 10000 then
-			return "Input too long"
+			return "Input too long", Util.ErrorColor
 		end
 
 		return Cmdr.Dispatcher:EvaluateAndRun(text, player, options)

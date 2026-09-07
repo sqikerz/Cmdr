@@ -104,6 +104,8 @@ end
 	Runs a command as the given player. Executor is optional when running on the client.
 	If `options.Data` is given, it will be available on the server with CommandContext.GetData
 	If `options.IsHuman` is true and this function is called on the client, then the `text` will be inserted into the window history.
+
+	Returns the command response, followed by the color the console should display it in.
 ]=]
 function Dispatcher:EvaluateAndRun(
 	text: string,
@@ -112,7 +114,7 @@ function Dispatcher:EvaluateAndRun(
 		Data: any?,
 		IsHuman: boolean?,
 	}?
-): string
+): (string, Color3?)
 	executor = executor or Players.LocalPlayer
 	options = options or {}
 
@@ -122,27 +124,29 @@ function Dispatcher:EvaluateAndRun(
 
 	const commandContext, errorText = self:Evaluate(text, executor, nil, (options :: any).Data)
 	if not commandContext then
-		return errorText
+		return errorText, Util.ErrorColor
 	end
 
-	const success, result = xpcall(function()
+	const success, result, resultColor = xpcall(function()
 		const isValid, validationError = commandContext:Validate(true)
 
 		if not isValid then
-			return validationError
+			return validationError, Util.ErrorColor
 		end
 
-		return commandContext:Run() or "Command executed."
+		const response, responseColor = commandContext:Run()
+
+		return response or "Command executed.", responseColor
 	end, function(err)
 		return debug.traceback(tostring(err))
 	end)
 
 	if not success then
 		warn(`[Cmdr] Error occurred while evaluating command string {("%q"):format(text)}\n{result}`)
-		return "An error occurred while running this command. Check the console for more information."
+		return "An error occurred while running this command. Check the console for more information.", Util.ErrorColor
 	end
 
-	return result
+	return result, resultColor
 end
 
 --[=[
@@ -151,8 +155,10 @@ end
 	@client
 
 	Send text as the local user to remote server to be evaluated there.
+
+	Returns the command response, followed by the color the console should display it in.
 ]=]
-function Dispatcher:Send(text: string, data: any?): string
+function Dispatcher:Send(text: string, data: any?): (string, Color3?)
 	assert(IS_CLIENT, "[Cmdr] [Dispatcher::Send] can only be called from the client.")
 	return self.Cmdr._remoteFunction:InvokeServer(text, { Data = data })
 end
@@ -209,7 +215,7 @@ function Dispatcher:Run(...: any): string
 	const valid, validationError = commandContext:Validate(true)
 	assert(valid, validationError)
 
-	return commandContext:Run()
+	return (commandContext:Run())
 end
 
 --[=[

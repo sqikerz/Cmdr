@@ -241,8 +241,8 @@ export type CommandDefinition = {
 	Group: string?,
 	Args: { ArgumentDefinition | (CommandContext) -> ArgumentDefinition? },
 	Data: ((CommandContext, ...any) -> any)?,
-	ClientRun: ((CommandContext, ...any) -> string?)?,
-	Run: ((CommandContext, ...any) -> string?)?,
+	ClientRun: ((CommandContext, ...any) -> any)?,
+	Run: ((CommandContext, ...any) -> any)?,
 	Guards: { (CommandContext, ...any) -> string? }?,
 	AutoExec: { string }?,
 
@@ -274,7 +274,7 @@ export type CommandContext = {
 	Validate: (self: CommandContext, isFinal: boolean?) -> (boolean, string),
 	GetLastArgument: (self: CommandContext) -> ArgumentContext?,
 	GatherArgumentValues: (self: CommandContext) -> ({ any }, number),
-	Run: (self: CommandContext) -> string?,
+	Run: (self: CommandContext) -> (string?, Color3?),
 	GetArgument: (self: CommandContext, index: number) -> ArgumentContext?,
 	GetData: (self: CommandContext) -> any,
 	SendEvent: (self: CommandContext, player: Player, event: string, ...any) -> (),
@@ -337,8 +337,8 @@ export type Dispatcher = {
 		text: string,
 		executor: Player?,
 		options: { Data: any?, IsHuman: boolean? }?
-	) -> string,
-	Send: (self: Dispatcher, text: string, data: any?) -> string,
+	) -> (string, Color3?),
+	Send: (self: Dispatcher, text: string, data: any?) -> (string, Color3?),
 	SendEvent: (self: Dispatcher, player: Player, event: string, ...any) -> (),
 	BroadcastEvent: (self: Dispatcher, event: string, ...any) -> (),
 	Run: (self: Dispatcher, ...any) -> string,
@@ -348,7 +348,10 @@ export type Dispatcher = {
 
 export type FuzzyFinder = (text: string, returnFirst: boolean?, matchStart: boolean?) -> any
 
+export type PromiseStatus = "Resolved" | "Rejected" | "Cancelled"
+
 export type Util = {
+	ErrorColor: Color3,
 	MakeDictionary: (array: { any }) -> { [any]: true },
 	DictionaryKeys: (dict: { [any]: any }) -> { any },
 	MakeFuzzyFinder: (setOrContainer: any) -> FuzzyFinder,
@@ -365,6 +368,8 @@ export type Util = {
 	RunEmbeddedCommands: (dispatcher: Dispatcher, str: string) -> string,
 	SubstituteArgs: (str: string, replace: any) -> string,
 	MakeAliasCommand: (name: string, commandString: string) -> CommandDefinition,
+	IsPromise: (value: any) -> boolean,
+	AwaitPromise: (promise: any) -> (PromiseStatus, any),
 	Map: <T, U>(array: { T }, callback: (T, number) -> U) -> { U },
 	Each: (callback: (any) -> any, ...any) -> ...any,
 

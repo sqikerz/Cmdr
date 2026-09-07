@@ -71,7 +71,31 @@ If you want your command to run on the client, you can add a [`ClientRun`](/api/
 If using `ClientRun`, having a Server module associated with this command is optional. If your `ClientRun` function returns a string, the command will run entirely on the client and won't touch the server at all (which means server-only hooks won't run). If this function doesn't return anything, it will then execute the associated Server module implementation on the server (including any server-sided hooks).
 
 :::caution
-If the `ClientRun` function is present and there isn't a Server module for this command then you must return a string from the `ClientRun` function.
+If the `ClientRun` function is present and there isn't a Server module for this command then you must return a string from the `ClientRun` function, or a promise that resolves to one.
+:::
+
+## Asynchronous commands
+
+Command implementations are allowed to yield, so most asynchronous work needs nothing special. If you prefer promises, your server implementation, `ClientRun` and `Data` may also return one, and Cmdr will wait for it to settle before continuing.
+
+```luau title="FetchServer.luau"
+return function(context: any, userId: number)
+	return getProfileAsync(userId):andThen(function(profile)
+		return `{profile.Name} has {profile.Coins} coins.`
+	end)
+end
+```
+
+Any object with an `andThen` method is treated as a promise, which covers [evaera's Promise library](https://eryn.io/roblox-lua-promise/) and anything compatible with it.
+
+- **Resolved** values are used as the command's response, exactly as if they had been returned directly. A `ClientRun` promise that resolves to `nil` falls back to the server, just like returning `nil` does.
+- **Rejected** promises use the rejection value as the response and emit a warning, so a rejection you don't handle yourself won't disappear silently. When the command was run from the console, the response is printed in the same color as any other command error.
+- **Cancelled** promises respond with `Command cancelled.` as ordinary output and emit no warning.
+
+Either way the command counts as having run, so your `AfterRun` hooks still fire and can rewrite the response.
+
+:::caution
+The console waits for the promise, so a promise that never settles leaves the command hanging. Use [`Promise:timeout`](https://eryn.io/roblox-lua-promise/api/Promise#timeout) if that's a possibility.
 :::
 
 ## Execution order

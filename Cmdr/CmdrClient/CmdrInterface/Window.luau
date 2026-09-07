@@ -385,7 +385,7 @@ return function(CmdrClient, AutoComplete)
 				self:_setEntryText("")
 				self._processEntry(text)
 			else
-				self:AddLine(self._errorText, Color3.fromRGB(255, 153, 153))
+				self:AddLine(self._errorText, CmdrClient.Util.ErrorColor)
 			end
 
 			self._hasLostFocus = false

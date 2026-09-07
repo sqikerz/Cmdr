@@ -104,6 +104,7 @@ end
 	Runs a command as the given player. Executor is optional when running on the client.
 	If `options.Data` is given, it will be available on the server with CommandContext.GetData
 	If `options.IsHuman` is true and this function is called on the client, then the `text` will be inserted into the window history.
+	If `options.Output` is given, a command waiting on a promise responds with an empty string and gives its real response to `options.Output` once the promise settles.
 
 	Returns the command response, followed by the color the console should display it in.
 ]=]
@@ -113,6 +114,7 @@ function Dispatcher:EvaluateAndRun(
 	options: {
 		Data: any?,
 		IsHuman: boolean?,
+		Output: ((response: string, responseColor: Color3?) -> ())?,
 	}?
 ): (string, Color3?)
 	executor = executor or Players.LocalPlayer
@@ -127,6 +129,13 @@ function Dispatcher:EvaluateAndRun(
 		return errorText, Util.ErrorColor
 	end
 
+	const output = (options :: any).Output
+	if output then
+		commandContext._output = function(response: string?, responseColor: Color3?)
+			output(response or "Command executed.", responseColor)
+		end
+	end
+
 	const success, result, resultColor = xpcall(function()
 		const isValid, validationError = commandContext:Validate(true)
 
@@ -135,6 +144,10 @@ function Dispatcher:EvaluateAndRun(
 		end
 
 		const response, responseColor = commandContext:Run()
+
+		if response == Util.Pending then
+			return ""
+		end
 
 		return response or "Command executed.", responseColor
 	end, function(err)
@@ -156,11 +169,13 @@ end
 
 	Send text as the local user to remote server to be evaluated there.
 
+	When `defer` is true, a server implementation waiting on a promise responds with an empty string and sends its real response to the console later.
+
 	Returns the command response, followed by the color the console should display it in.
 ]=]
-function Dispatcher:Send(text: string, data: any?): (string, Color3?)
+function Dispatcher:Send(text: string, data: any?, defer: boolean?): (string, Color3?)
 	assert(IS_CLIENT, "[Cmdr] [Dispatcher::Send] can only be called from the client.")
-	return self.Cmdr._remoteFunction:InvokeServer(text, { Data = data })
+	return self.Cmdr._remoteFunction:InvokeServer(text, { Data = data, Defer = defer })
 end
 
 --[=[

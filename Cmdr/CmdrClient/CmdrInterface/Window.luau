@@ -346,7 +346,12 @@ return function(CmdrClient, AutoComplete)
 		end
 
 		Window:AddLine(`{Window:GetLabelText()} {text}`, PROCESSING_TEXT_COLOR)
-		Window:AddLine(CmdrClient.Dispatcher:EvaluateAndRun(text, Player, { IsHuman = true }))
+		Window:AddLine(CmdrClient.Dispatcher:EvaluateAndRun(text, Player, {
+			IsHuman = true,
+			Output = function(response: string, responseColor: Color3?)
+				Window:AddLine(response, responseColor)
+			end,
+		}))
 	end
 
 	--[=[

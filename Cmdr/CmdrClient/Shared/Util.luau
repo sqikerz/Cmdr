@@ -117,6 +117,15 @@ end
 --[=[
 	@within Util
 	@readonly
+
+	@prop Pending Pending
+
+	The response of a command whose real response will be given to its output callback later. See [Dispatcher:EvaluateAndRun].
+]=]
+
+--[=[
+	@within Util
+	@readonly
 	@private
 
 	@prop _deprecationWarnings { [string]: { Description: string, Suppressed: boolean, Emitted: boolean } }
@@ -126,6 +135,7 @@ end
 
 const Util = {
 	ErrorColor = Color3.fromRGB(255, 153, 153),
+	Pending = table.freeze({}) :: Pending,
 	_deprecationWarnings = {} :: { [string]: { Description: string, Suppressed: boolean, Emitted: boolean } },
 }
 
@@ -832,6 +842,8 @@ function Util.Mutex(): () -> ()
 		end
 	end
 end
+
+export type Pending = {}
 
 export type PromiseStatus = "Resolved" | "Rejected" | "Cancelled"
 

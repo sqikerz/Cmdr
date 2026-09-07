@@ -76,7 +76,7 @@ If the `ClientRun` function is present and there isn't a Server module for this 
 
 ## Asynchronous commands
 
-Command implementations are allowed to yield, so most asynchronous work needs nothing special. If you prefer promises, your server implementation, `ClientRun` and `Data` may also return one, and Cmdr will wait for it to settle before continuing.
+Command implementations are allowed to yield, so most asynchronous work needs nothing special. If you prefer promises, your server implementation, `ClientRun` and `Data` may also return one, and Cmdr will continue the command once it settles.
 
 ```luau title="FetchServer.luau"
 return function(context: any, userId: number)
@@ -88,15 +88,19 @@ end
 
 Any object with an `andThen` method is treated as a promise, which covers [evaera's Promise library](https://eryn.io/roblox-lua-promise/) and anything compatible with it.
 
-- **Resolved** values are used as the command's response, exactly as if they had been returned directly. A `ClientRun` promise that resolves to `nil` falls back to the server, just like returning `nil` does.
-- **Rejected** promises use the rejection value as the response and emit a warning, so a rejection you don't handle yourself won't disappear silently. When the command was run from the console, the response is printed in the same color as any other command error.
-- **Cancelled** promises respond with `Command cancelled.` as ordinary output and emit no warning.
+- **Resolved** values are the command's response, exactly as if they had been returned directly, so a `ClientRun` promise resolving to `nil` falls back to the server.
+- **Rejected** promises respond with the rejection value, in the console's error color, and emit a warning.
+- **Cancelled** promises respond with `Command cancelled.`
 
 Either way the command counts as having run, so your `AfterRun` hooks still fire and can rewrite the response.
 
-:::caution
-The console waits for the promise, so a promise that never settles leaves the command hanging. Use [`Promise:timeout`](https://eryn.io/roblox-lua-promise/api/Promise#timeout) if that's a possibility.
-:::
+### Waiting doesn't block the console
+
+The console stays usable while a promise is outstanding, so more commands can be run in the meantime. Responses are printed as their promises settle, which means they can appear out of order.
+
+A response from a server implementation's promise arrives as a console message rather than as the command's response, so client-side `AfterRun` hooks don't see it.
+
+Commands run programmatically with [`Dispatcher:Run`](/api/Dispatcher#Run) or [`Dispatcher:EvaluateAndRun`](/api/Dispatcher#EvaluateAndRun) wait for the promise instead, since they have to return the response.
 
 ## Execution order
 

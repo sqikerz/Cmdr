@@ -331,26 +331,88 @@ end
 	@within CommandContext
 	@private
 
+	@param value -- The value an implementation returned, which may or may not be a promise.
+	@param continue -- The rest of the command.
+
 	@return (any, Color3?) -- The response, followed by the color the console should display it in.
 
-	Gathers data and runs the client or server implementation, awaiting any promise they return.
+	Continues the command once the given value has settled.
+]=]
+function Command:_settle(value: any, continue: (Util.PromiseStatus, any) -> (any, Color3?)): (any, Color3?)
+	if not Util.IsPromise(value) then
+		return continue("Resolved", value)
+	end
+
+	if not self._output then
+		return continue(settle(value))
+	end
+
+	task.spawn(function()
+		const success, response, responseColor = xpcall(continue, function(err)
+			return debug.traceback(tostring(err))
+		end, Util.AwaitPromise(value))
+
+		if not success then
+			warn(`[Cmdr] Error occurred while running the {self.Name} command\n{response}`)
+			self._output(
+				"An error occurred while running this command. Check the console for more information.",
+				Util.ErrorColor
+			)
+			return
+		end
+
+		if response == Util.Pending then
+			return
+		end
+
+		self._output(self:_finish(response, responseColor))
+	end)
+
+	return Util.Pending
+end
+
+--[=[
+	@within CommandContext
+	@private
+
+	@return (any, Color3?) -- The response, followed by the color the console should display it in.
+
+	Gathers data, then runs the implementation.
 ]=]
 function Command:_runImplementation(): (any, Color3?)
 	if not IS_SERVER and self.Object.Data and self.Data == nil then
 		const values, length = self:GatherArgumentValues()
-		const status, data = settle(self.Object.Data(self, unpack(values, 1, length)))
 
-		if status ~= "Resolved" then
-			return self:_failureResponse(status, data)
-		end
+		return self:_settle(self.Object.Data(self, unpack(values, 1, length)), function(status, data)
+			if status ~= "Resolved" then
+				return self:_failureResponse(status, data)
+			end
 
-		self.Data = data
+			self.Data = data
+
+			return self:_runClientImplementation()
+		end)
 	end
 
-	if not IS_SERVER and self.Object.ClientRun then
-		const values, length = self:GatherArgumentValues()
-		const status, response = settle(self.Object.ClientRun(self, unpack(values, 1, length)))
+	return self:_runClientImplementation()
+end
 
+--[=[
+	@within CommandContext
+	@private
+
+	@return (any, Color3?) -- The response, followed by the color the console should display it in.
+
+	Runs the client implementation, falling back to the server one.
+]=]
+function Command:_runClientImplementation(): (any, Color3?)
+	if IS_SERVER or not self.Object.ClientRun then
+		return self:_runServerImplementation()
+	end
+
+	const values, length = self:GatherArgumentValues()
+
+	return self:_settle(self.Object.ClientRun(self, unpack(values, 1, length)), function(status, response)
 		if status ~= "Resolved" then
 			return self:_failureResponse(status, response)
 		end
@@ -358,17 +420,30 @@ function Command:_runImplementation(): (any, Color3?)
 		if response ~= nil then
 			return response
 		end
-	end
 
+		return self:_runServerImplementation()
+	end)
+end
+
+--[=[
+	@within CommandContext
+	@private
+
+	@return (any, Color3?) -- The response, followed by the color the console should display it in.
+
+	Runs the server implementation.
+]=]
+function Command:_runServerImplementation(): (any, Color3?)
 	if self.Object.Run then
 		const values, length = self:GatherArgumentValues()
-		const status, response = settle(self.Object.Run(self, unpack(values, 1, length)))
 
-		if status ~= "Resolved" then
-			return self:_failureResponse(status, response)
-		end
+		return self:_settle(self.Object.Run(self, unpack(values, 1, length)), function(status, response)
+			if status ~= "Resolved" then
+				return self:_failureResponse(status, response)
+			end
 
-		return response
+			return response
+		end)
 	end
 
 	if IS_SERVER then
@@ -383,16 +458,35 @@ function Command:_runImplementation(): (any, Color3?)
 		return "No implementation."
 	end
 
-	return self.Dispatcher:Send(self.RawText, self.Data)
+	return self.Dispatcher:Send(self.RawText, self.Data, self._output ~= nil)
 end
 
 --[=[
 	@within CommandContext
+	@private
+
 	@return (string?, Color3?) -- The response, followed by the color the console should display it in.
+
+	Records the response and runs the AfterRun hooks.
+]=]
+function Command:_finish(response: any, responseColor: Color3?): (string?, Color3?)
+	self.Response = response
+
+	const afterRunHook = self.Dispatcher:RunHooks("AfterRun", self)
+	if afterRunHook then
+		return afterRunHook
+	end
+
+	return self.Response, responseColor
+end
+
+--[=[
+	@within CommandContext
+	@return (string? | Pending, Color3?) -- The response, followed by the color the console should display it in. [Util.Pending] means the response will be given to the command's output callback instead.
 
 	Runs the command.
 ]=]
-function Command:Run(): (string?, Color3?)
+function Command:Run(): (any, Color3?)
 	assert(self._Validated, "[Cmdr] Must validate a command before running.")
 
 	const beforeRunHook = self.Dispatcher:RunHooks("BeforeRun", self)
@@ -406,14 +500,11 @@ function Command:Run(): (string?, Color3?)
 	end
 
 	const response, responseColor = self:_runImplementation()
-	self.Response = response
-
-	const afterRunHook = self.Dispatcher:RunHooks("AfterRun", self)
-	if afterRunHook then
-		return afterRunHook
+	if response == Util.Pending then
+		return Util.Pending
 	end
 
-	return self.Response, responseColor
+	return self:_finish(response, responseColor)
 end
 
 --[=[

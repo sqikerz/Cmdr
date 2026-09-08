@@ -332,23 +332,23 @@ end
 	@private
 
 	@param value -- The value an implementation returned, which may or may not be a promise.
-	@param continue -- The rest of the command.
+	@param andThen -- The rest of the command.
 
 	@return (any, Color3?) -- The response, followed by the color the console should display it in.
 
 	Continues the command once the given value has settled.
 ]=]
-function Command:_settle(value: any, continue: (Util.PromiseStatus, any) -> (any, Color3?)): (any, Color3?)
+function Command:_settle(value: any, andThen: (Util.PromiseStatus, any) -> (any, Color3?)): (any, Color3?)
 	if not Util.IsPromise(value) then
-		return continue("Resolved", value)
+		return andThen("Resolved", value)
 	end
 
 	if not self._output then
-		return continue(settle(value))
+		return andThen(settle(value))
 	end
 
 	task.spawn(function()
-		const success, response, responseColor = xpcall(continue, function(err)
+		const success, response, responseColor = xpcall(andThen, function(err)
 			return debug.traceback(tostring(err))
 		end, Util.AwaitPromise(value))
 

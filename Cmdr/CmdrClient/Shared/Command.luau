@@ -334,11 +334,14 @@ end
 	@param value -- The value an implementation returned, which may or may not be a promise.
 	@param andThen -- The rest of the command.
 
-	@return (any, Color3?) -- The response, followed by the color the console should display it in.
+	@return (Response, Color3?) -- The response, followed by the color the console should display it in.
 
 	Continues the command once the given value has settled.
 ]=]
-function Command:_settle(value: any, andThen: (Util.PromiseStatus, any) -> (any, Color3?)): (any, Color3?)
+function Command:_settle(
+	value: any,
+	andThen: (Util.PromiseStatus, any) -> (Util.Response, Color3?)
+): (Util.Response, Color3?)
 	if not Util.IsPromise(value) then
 		return andThen("Resolved", value)
 	end
@@ -355,7 +358,7 @@ function Command:_settle(value: any, andThen: (Util.PromiseStatus, any) -> (any,
 				return Util.Pending
 			end
 
-			return self:_finish(result, resultColor)
+			return self:_finish(result :: string?, resultColor)
 		end, function(err)
 			return debug.traceback(tostring(err))
 		end)
@@ -383,11 +386,11 @@ end
 	@within CommandContext
 	@private
 
-	@return (any, Color3?) -- The response, followed by the color the console should display it in.
+	@return (Response, Color3?) -- The response, followed by the color the console should display it in.
 
 	Gathers data, then runs the implementation.
 ]=]
-function Command:_runImplementation(): (any, Color3?)
+function Command:_runImplementation(): (Util.Response, Color3?)
 	if not IS_SERVER and self.Object.Data and self.Data == nil then
 		const values, length = self:GatherArgumentValues()
 
@@ -409,11 +412,11 @@ end
 	@within CommandContext
 	@private
 
-	@return (any, Color3?) -- The response, followed by the color the console should display it in.
+	@return (Response, Color3?) -- The response, followed by the color the console should display it in.
 
 	Runs the client implementation, falling back to the server one.
 ]=]
-function Command:_runClientImplementation(): (any, Color3?)
+function Command:_runClientImplementation(): (Util.Response, Color3?)
 	if IS_SERVER or not self.Object.ClientRun then
 		return self:_runServerImplementation()
 	end
@@ -437,11 +440,11 @@ end
 	@within CommandContext
 	@private
 
-	@return (any, Color3?) -- The response, followed by the color the console should display it in.
+	@return (Response, Color3?) -- The response, followed by the color the console should display it in.
 
 	Runs the server implementation.
 ]=]
-function Command:_runServerImplementation(): (any, Color3?)
+function Command:_runServerImplementation(): (Util.Response, Color3?)
 	if self.Object.Run then
 		const values, length = self:GatherArgumentValues()
 
@@ -477,12 +480,12 @@ end
 
 	Records the response and runs the AfterRun hooks.
 ]=]
-function Command:_finish(response: any, responseColor: Color3?): (string?, Color3?)
+function Command:_finish(response: string?, responseColor: Color3?): (string?, Color3?)
 	self.Response = response
 
 	const afterRunHook = self.Dispatcher:RunHooks("AfterRun", self)
 	if afterRunHook then
-		return afterRunHook
+		return afterRunHook, responseColor
 	end
 
 	return self.Response, responseColor
@@ -494,7 +497,7 @@ end
 
 	Runs the command.
 ]=]
-function Command:Run(): (any, Color3?)
+function Command:Run(): (Util.Response, Color3?)
 	assert(self._Validated, "[Cmdr] Must validate a command before running.")
 
 	const beforeRunHook = self.Dispatcher:RunHooks("BeforeRun", self)
@@ -512,7 +515,7 @@ function Command:Run(): (any, Color3?)
 		return Util.Pending
 	end
 
-	return self:_finish(response, responseColor)
+	return self:_finish(response :: string?, responseColor)
 end
 
 --[=[

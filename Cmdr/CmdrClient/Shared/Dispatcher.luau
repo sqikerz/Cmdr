@@ -149,7 +149,7 @@ function Dispatcher:EvaluateAndRun(
 			return ""
 		end
 
-		return response or "Command executed.", responseColor
+		return (response :: string?) or "Command executed.", responseColor
 	end, function(err)
 		return debug.traceback(tostring(err))
 	end)
@@ -212,16 +212,16 @@ end
 	@client
 
 	Invokes a command programmatically as the local player.
-	Accepts a variable number of arguments, which are all joined with spaces before being run; the command should be the first argument.
+	Accepts the command name, followed by a variable number of arguments which are all joined with spaces before being run.
 	This function will raise an error if any validations occur, since it's only for hard-coded (or generated) commands.
 ]=]
-function Dispatcher:Run(...: any): string
+function Dispatcher:Run(command: string, ...: unknown): string?
 	assert(IS_CLIENT, "[Cmdr] [Dispatcher::Run] can only be called from the client.")
 
 	const arguments = { ... }
-	local text = tostring(arguments[1])
-	for index = 2, #arguments do
-		text ..= ` {arguments[index]}`
+	local text = tostring(command)
+	for index = 1, #arguments do
+		text ..= ` {tostring(arguments[index])}`
 	end
 
 	const commandContext, errorText = self:Evaluate(text, Players.LocalPlayer)
@@ -230,7 +230,7 @@ function Dispatcher:Run(...: any): string
 	const valid, validationError = commandContext:Validate(true)
 	assert(valid, validationError)
 
-	return (commandContext:Run())
+	return (commandContext:Run()) :: string?
 end
 
 --[=[

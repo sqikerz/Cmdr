@@ -274,7 +274,7 @@ export type CommandContext = {
 	Validate: (self: CommandContext, isFinal: boolean?) -> (boolean, string),
 	GetLastArgument: (self: CommandContext) -> ArgumentContext?,
 	GatherArgumentValues: (self: CommandContext) -> ({ any }, number),
-	Run: (self: CommandContext) -> (string? | Pending, Color3?),
+	Run: (self: CommandContext) -> (Response, Color3?),
 	GetArgument: (self: CommandContext, index: number) -> ArgumentContext?,
 	GetData: (self: CommandContext) -> any,
 	SendEvent: (self: CommandContext, player: Player, event: string, ...any) -> (),
@@ -345,7 +345,7 @@ export type Dispatcher = {
 	Send: (self: Dispatcher, text: string, data: any?, defer: boolean?) -> (string, Color3?),
 	SendEvent: (self: Dispatcher, player: Player, event: string, ...any) -> (),
 	BroadcastEvent: (self: Dispatcher, event: string, ...any) -> (),
-	Run: (self: Dispatcher, ...any) -> string,
+	Run: (self: Dispatcher, command: string, ...unknown) -> string?,
 	GetHistory: (self: Dispatcher) -> { string },
 	RunBeforeCommandRegisterHooks: (self: Dispatcher, player: Player?) -> (),
 }
@@ -353,6 +353,8 @@ export type Dispatcher = {
 export type FuzzyFinder = (text: string, returnFirst: boolean?, matchStart: boolean?) -> any
 
 export type Pending = {}
+
+export type Response = string? | Pending
 
 export type PromiseStatus = "Resolved" | "Rejected" | "Cancelled"
 

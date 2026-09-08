@@ -845,6 +845,8 @@ end
 
 export type Pending = {}
 
+export type Response = string? | Pending
+
 export type PromiseStatus = "Resolved" | "Rejected" | "Cancelled"
 
 --[=[

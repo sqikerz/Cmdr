@@ -348,9 +348,17 @@ function Command:_settle(value: any, andThen: (Util.PromiseStatus, any) -> (any,
 	end
 
 	task.spawn(function()
-		const success, response, responseColor = xpcall(andThen, function(err)
+		const success, response, responseColor = xpcall(function()
+			const result, resultColor = andThen(Util.AwaitPromise(value))
+
+			if result == Util.Pending then
+				return Util.Pending
+			end
+
+			return self:_finish(result, resultColor)
+		end, function(err)
 			return debug.traceback(tostring(err))
-		end, Util.AwaitPromise(value))
+		end)
 
 		if not success then
 			warn(`[Cmdr] Error occurred while running the {self.Name} command\n{response}`)
@@ -365,7 +373,7 @@ function Command:_settle(value: any, andThen: (Util.PromiseStatus, any) -> (any,
 			return
 		end
 
-		self._output(self:_finish(response, responseColor))
+		self._output(response, responseColor)
 	end)
 
 	return Util.Pending

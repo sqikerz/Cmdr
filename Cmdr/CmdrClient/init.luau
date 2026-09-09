@@ -98,7 +98,7 @@ end
 ]=]
 
 --[=[
-	@within Cmdr
+	@within CmdrClient
 	@readonly
 	@private
 

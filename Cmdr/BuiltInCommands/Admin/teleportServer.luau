@@ -8,7 +8,7 @@ return function(_, fromPlayers: { Player }, destination: Player | Vector3): stri
 	for _, player: Player in ipairs(fromPlayers) do
 		const character = player.Character
 		const humanoid = character and character:FindFirstChildWhichIsA("Humanoid") :: Humanoid?
-		if not character or not humanoid then
+		if not humanoid then
 			continue
 		end
 

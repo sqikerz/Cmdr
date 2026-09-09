@@ -3,12 +3,16 @@ return function(_, fromPlayers: { Player }, destination: Player | Vector3): stri
 		then (destination.Character :: Model):GetPivot()
 		else CFrame.new(destination)
 
+	local teleported = 0
+
 	for _, player: Player in ipairs(fromPlayers) do
 		const character = player.Character
-		const humanoid = character and character:FindFirstChildWhichIsA("Humanoid")
-		if not humanoid then
+		const humanoid = character and character:FindFirstChildWhichIsA("Humanoid") :: Humanoid?
+		if not character or not humanoid then
 			continue
 		end
+
+		teleported += 1
 
 		task.spawn(function()
 			if humanoid.SeatPart then
@@ -22,5 +26,9 @@ return function(_, fromPlayers: { Player }, destination: Player | Vector3): stri
 		end)
 	end
 
-	return `Teleported {#fromPlayers} players.`
+	if teleported == #fromPlayers then
+		return `Teleported {teleported} players.`
+	end
+
+	return `Teleported {teleported} of {#fromPlayers} players. The rest had no character.`
 end

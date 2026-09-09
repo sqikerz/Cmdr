@@ -843,10 +843,28 @@ function Util.Mutex(): () -> ()
 	end
 end
 
+--[=[
+	@within Util
+	@type Pending {}
+
+	The type of [Util.Pending], the response of a command whose real response will be given to its output callback later.
+]=]
 export type Pending = {}
 
+--[=[
+	@within Util
+	@type Response string? | Pending
+
+	Anything a command implementation may return as its response.
+]=]
 export type Response = string? | Pending
 
+--[=[
+	@within Util
+	@type PromiseStatus "Resolved" | "Rejected" | "Cancelled"
+
+	The states a promise can settle in, mirroring [evaera's Promise.Status](https://eryn.io/roblox-lua-promise/api/Promise#Status) minus `Started`.
+]=]
 export type PromiseStatus = "Resolved" | "Rejected" | "Cancelled"
 
 --[=[

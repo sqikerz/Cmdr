@@ -20,4 +20,14 @@ return {
 	Guards = {
 		HasCharacter(1),
 	},
+
+	ClientRun = function(_, player: Player): string?
+		const character = player.Character
+		const rootPart = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
+		if not rootPart then
+			return nil
+		end
+
+		return (tostring(rootPart.Position):gsub("%s", ""))
+	end,
 }

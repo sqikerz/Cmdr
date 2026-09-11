@@ -1,12 +1,15 @@
 const SEAT_TIMEOUT = 1
 
 const function teleportCharacter(humanoid: Humanoid, character: Model, cFrame: CFrame): boolean
-	if humanoid.SeatPart then
+	if humanoid.Sit then
+		const wasSeated = humanoid.SeatPart ~= nil
 		humanoid.Sit = false
 
-		const deadline = os.clock() + SEAT_TIMEOUT
-		while humanoid.SeatPart and os.clock() < deadline do
-			task.wait()
+		if wasSeated then
+			const deadline = os.clock() + SEAT_TIMEOUT
+			while humanoid.SeatPart and os.clock() < deadline do
+				task.wait()
+			end
 		end
 	end
 

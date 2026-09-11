@@ -90,6 +90,7 @@ Any object with an `andThen` method is treated as a promise, which covers [evaer
 
 - **Resolved** values are the command's response, exactly as if they had been returned directly, so a `ClientRun` promise resolving to `nil` falls back to the server.
 - **Rejected** promises respond with the rejection value, in the console's error color, and emit a warning.
+  - When the rejection carries a traceback from an error thrown inside the promise, the warning uses that instead, and the console responds with a generic message, matching how an error in an ordinary command is reported.
 - **Cancelled** promises respond with `Command cancelled.`
 
 Either way the command counts as having run, so `AfterRun` hooks fire and can rewrite the response.

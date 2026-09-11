@@ -307,6 +307,10 @@ const function failureText(status: Util.PromiseStatus, value: any): string
 	return if value == nil then "Command failed." else tostring(value)
 end
 
+const function isExecutionError(value: any): boolean
+	return type(value) == "table" and (value :: any).kind == "ExecutionError" and type((value :: any).trace) == "string"
+end
+
 --[=[
 	@within CommandContext
 	@private
@@ -316,13 +320,17 @@ end
 	Reports an implementation whose promise didn't resolve.
 ]=]
 function Command:_failureResponse(status: Util.PromiseStatus, value: any): (string, Color3?)
-	const response = failureText(status, value)
-
 	if status == "Cancelled" then
-		return response
+		return failureText(status, value)
 	end
 
-	warn(`[Cmdr] {self.Name} command rejected: {response}`)
+	if isExecutionError(value) then
+		warn(`[Cmdr] Error occurred while running the {self.Name} command\n{tostring(value)}`)
+		return "An error occurred while running this command. Check the console for more information.", Util.ErrorColor
+	end
+
+	const response = failureText(status, value)
+	warn(`[Cmdr] Error occurred while running the {self.Name} command\n{response}`)
 
 	return response, Util.ErrorColor
 end

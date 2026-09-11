@@ -460,7 +460,7 @@ function Command:_runServerImplementation(): (Util.Response, Color3?)
 	if IS_SERVER then
 		if self.Object.ClientRun then
 			warn(
-				`[Cmdr] {self.Name} command fell back to the server because ClientRun returned nil, but there is no server implementation!`
+				`[Cmdr] {self.Name} command fell back to the server because ClientRun returned nil, but there is no server implementation.`
 			)
 		else
 			warn(`[Cmdr] {self.Name} command has no implementation!`)
@@ -498,7 +498,7 @@ end
 	Runs the command.
 ]=]
 function Command:Run(): (Util.Response, Color3?)
-	assert(self._Validated, "[Cmdr] Must validate a command before running.")
+	assert(self._Validated, "[Cmdr] CommandContext must be validated before running.")
 
 	const beforeRunHook = self.Dispatcher:RunHooks("BeforeRun", self)
 	if beforeRunHook then

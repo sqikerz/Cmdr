@@ -74,9 +74,9 @@ If using `ClientRun`, having a Server module associated with this command is opt
 If the `ClientRun` function is present and there isn't a Server module for this command then you must return a string from the `ClientRun` function, or a promise that resolves to one.
 :::
 
-## Asynchronous commands
+## Promises
 
-Command implementations are allowed to yield, so most asynchronous work needs nothing special. If you prefer promises, your server implementation, `ClientRun` and `Data` may also return one, and Cmdr will continue the command once it settles.
+Command implementations are allowed to yield, so you don't need to do anything for asynchronous work. Server implementation, `ClientRun`, and `Data` can return promises and Cmdr will continue the command once it settles.
 
 ```luau title="FetchServer.luau"
 return function(context: any, userId: number)
@@ -92,7 +92,7 @@ Any object with an `andThen` method is treated as a promise, which covers [evaer
 - **Rejected** promises respond with the rejection value, in the console's error color, and emit a warning.
 - **Cancelled** promises respond with `Command cancelled.`
 
-Either way the command counts as having run, so your `AfterRun` hooks still fire and can rewrite the response.
+Either way the command counts as having run, so `AfterRun` hooks fire and can rewrite the response.
 
 ### Waiting doesn't block the console
 

@@ -120,7 +120,7 @@ end
 
 	@prop Pending Pending
 
-	The response of a command whose real response will be given to its output callback later. See [Dispatcher:EvaluateAndRun].
+	A symbol representing a placeholder command response; the real response will be given to its output callback later. See [Dispatcher:EvaluateAndRun].
 ]=]
 
 --[=[

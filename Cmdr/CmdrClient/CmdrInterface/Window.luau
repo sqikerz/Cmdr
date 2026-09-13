@@ -230,6 +230,10 @@ return function(CmdrClient, AutoComplete)
 
 			self._entry.TextBox:CaptureFocus()
 			self:_setEntryText("")
+			self._entry.TextBox.TextEditable = false
+			task.delay(0, function()
+				self._entry.TextBox.TextEditable = true
+			end)
 		else
 			self:_setChatEnabled(true)
 			self:_setMouseUnlocked(false)
@@ -380,6 +384,9 @@ return function(CmdrClient, AutoComplete)
 
 		if submit then
 			self._hasLostFocus = true
+			if self:IsVisible() then
+				self._entry.TextBox:CaptureFocus()
+			end
 
 			if self._valid then
 				self:_setEntryText("")
@@ -503,9 +510,6 @@ return function(CmdrClient, AutoComplete)
 			self:_selectVertical(1)
 		elseif input.KeyCode == Enum.KeyCode.Up then
 			self:_selectVertical(-1)
-		elseif input.KeyCode == Enum.KeyCode.Return then
-			task.wait()
-			self:_setEntryText(self:GetEntryText():gsub("\n", ""):gsub("\r", ""))
 		elseif input.KeyCode == Enum.KeyCode.Tab then
 			if self._entry.TextBox.IsFocused then
 				self:_handleTabCompletion()
@@ -694,13 +698,14 @@ return function(CmdrClient, AutoComplete)
 
 	Window._entry.TextBox:GetPropertyChangedSignal("Text"):Connect(function()
 		entryFrame.CanvasPosition = Vector2.new(0, entryFrame.AbsoluteCanvasSize.Y)
-
-		if Window._entry.TextBox.Text:match("\t") then
-			Window._entry.TextBox.Text = Window._entry.TextBox.Text:gsub("\t", "")
+		const text = Window._entry.TextBox.Text
+		const sanitized = text:gsub("[\t\r\n]", "")
+		if sanitized ~= text then
+			Window._entry.TextBox.Text = sanitized
 			return
 		end
 
-		Window._onTextChanged(Window._entry.TextBox.Text)
+		Window._onTextChanged(text)
 	end)
 
 	entryFrame.ChildAdded:Connect(function()

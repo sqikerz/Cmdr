@@ -13,8 +13,8 @@ const Util = require("@self/Shared/Util")
 const CmdrInterface = require("@self/CmdrInterface")
 const DefaultEventHandlers = require("@self/DefaultEventHandlers")
 
-const TYPES_FOLDER = script:WaitForChild("Types") :: Folder
-const COMMANDS_FOLDER = script:WaitForChild("Commands") :: Folder
+const TypesFolder = script:WaitForChild("Types") :: Folder
+const CommandsFolder = script:WaitForChild("Commands") :: Folder
 
 type Signal = {
 	Fire: (self: Signal, ...any) -> (),
@@ -332,10 +332,10 @@ const function initialize()
 		CmdrClient._events[eventName](...)
 	end)
 
-	CmdrClient.Registry:RegisterTypesIn(TYPES_FOLDER)
-	CmdrClient.Registry:RegisterCommandsIn(COMMANDS_FOLDER)
+	CmdrClient.Registry:RegisterTypesIn(TypesFolder)
+	CmdrClient.Registry:RegisterCommandsIn(CommandsFolder)
 
-	TYPES_FOLDER.ChildAdded:Connect(function(child: Instance)
+	TypesFolder.ChildAdded:Connect(function(child: Instance)
 		if not child:IsA("ModuleScript") then
 			warn(`[Cmdr] Ignored non-module child in Types: {child.Name}`)
 			return
@@ -344,7 +344,7 @@ const function initialize()
 		require(child)(CmdrClient.Registry)
 	end)
 
-	COMMANDS_FOLDER.ChildAdded:Connect(function(child: Instance)
+	CommandsFolder.ChildAdded:Connect(function(child: Instance)
 		if not child:IsA("ModuleScript") then
 			warn(`[Cmdr] Ignored non-module child in Commands: {child.Name}`)
 			return

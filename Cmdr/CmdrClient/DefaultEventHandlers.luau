@@ -1,11 +1,11 @@
 const TextChatService = game:GetService("TextChatService")
 
-const TEXT_CHANNELS = TextChatService:WaitForChild("TextChannels")
-const RBXSYSTEM_CHANNEL: TextChannel = TEXT_CHANNELS:WaitForChild("RBXSystem")
+const TextChannels = TextChatService:WaitForChild("TextChannels")
+const RBXSystem: TextChannel = TextChannels:WaitForChild("RBXSystem")
 
 return function(CmdrClient)
 	CmdrClient:HandleEvent("Message", function(text: string)
-		RBXSYSTEM_CHANNEL:DisplaySystemMessage(`<font color="rgb(249, 217, 56)">[Announcement] {text}</font>`)
+		RBXSystem:DisplaySystemMessage(`<font color="rgb(249, 217, 56)">[Announcement] {text}</font>`)
 	end)
 
 	CmdrClient:HandleEvent("AddLine", function(...: any)

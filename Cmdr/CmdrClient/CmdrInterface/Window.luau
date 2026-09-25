@@ -67,35 +67,6 @@ const function onKeyReleased(callback: () -> ())
 	end
 end
 
--- ContextActionService does not receive clicks over other UI, so a non-sinking layer observes those
-const function createBackdrop(gui: ScreenGui): Frame
-	const backdrop = Instance.new("Frame")
-	backdrop.Name = "Backdrop"
-	backdrop.Active = false
-	backdrop.BackgroundTransparency = 1
-	backdrop.Size = UDim2.fromScale(1, 1)
-	backdrop.Visible = false
-	backdrop.ZIndex = 0
-	backdrop.Parent = gui
-
-	return backdrop
-end
-
-const function createMouseUnlocker(gui: ScreenGui): TextButton
-	const unlocker = Instance.new("TextButton")
-	unlocker.Name = "MouseUnlocker"
-	unlocker.Active = false
-	unlocker.BackgroundTransparency = 1
-	unlocker.Modal = true
-	unlocker.Selectable = false
-	unlocker.Size = UDim2.fromOffset(0, 0)
-	unlocker.Text = ""
-	unlocker.Visible = false
-	unlocker.Parent = gui
-
-	return unlocker
-end
-
 --[=[
 	@class Window
 	@ignore
@@ -107,8 +78,8 @@ return function(CmdrClient, AutoComplete)
 	const Window = {
 		_entry = entryFrame:WaitForChild("Entry") :: Frame,
 		_lineTemplate = entryFrame:WaitForChild("Line") :: TextBox,
-		_backdrop = createBackdrop(CmdrClient.Gui),
-		_mouseUnlocker = createMouseUnlocker(CmdrClient.Gui),
+		_backdrop = CmdrClient.Gui:WaitForChild("Backdrop") :: Frame,
+		_mouseUnlocker = CmdrClient.Gui:WaitForChild("MouseUnlocker") :: TextButton,
 
 		_previousChatStates = {} :: { [any]: boolean },
 		_visibleInputConnection = nil :: RBXScriptConnection?,

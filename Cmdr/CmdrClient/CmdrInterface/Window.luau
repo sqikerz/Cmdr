@@ -398,6 +398,12 @@ return function(CmdrClient, AutoComplete)
 		elseif submit then
 			self._hasLostFocus = true
 
+			task.defer(function()
+				if self:IsVisible() then
+					self._entry.TextBox:CaptureFocus()
+				end
+			end)
+
 			if self._valid then
 				self:_setEntryText("")
 				self:_processEntry(text)
